@@ -1,40 +1,44 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { authService } from '../services/auth.service';
-import { Session } from '../types';
+import { useState, useEffect, JSX } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { authService } from "../services/auth.service";
+import { Session } from "../types";
 
-function SessionDetail() {
-  const { id } = useParams();
+function SessionDetail(): JSX.Element {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState<any>(true);
-  const [error, setError] = useState<any>('');
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
   const user = authService.getCurrentUser();
   const token = authService.getToken();
 
   useEffect(() => {
-    fetchSession();
+    const controller = new AbortController();
+    fetchSession(controller.signal);
+    return () => controller.abort();
   }, [id]);
 
-  const fetchSession = async (): Promise<any> => {
+  const fetchSession = async (signal? : AbortSignal): Promise<void> => {
     try {
       setLoading(true);
       const response = await api.get<Session>(`/session/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        signal
       });
       setSession(response.data);
-    } catch (err: any) {
-      setError('Failed to load session details');
-      console.error(err);
+    } catch (err: unknown) {
+    if ((err as { name?: string }).name === 'CanceledError') return;
+    setError("Failed to load session details");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleParticipate = async (): Promise<any> => {
+  const handleParticipate = async (): Promise<void> => {
+    if (!user) return;
     try {
       await api.post(
         `/session/${id}/participate/${user.id}`,
@@ -43,16 +47,17 @@ function SessionDetail() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       fetchSession();
-    } catch (err: any) {
-      alert('Failed to join session');
+    } catch (err: unknown) {
+      alert("Failed to join session");
       console.error(err);
     }
   };
 
-  const handleUnparticipate = async (): Promise<any> => {
+  const handleUnparticipate = async (): Promise<void> => {
+    if (!user) return;
     try {
       await api.delete(`/session/${id}/participate/${user.id}`, {
         headers: {
@@ -60,14 +65,14 @@ function SessionDetail() {
         },
       });
       fetchSession();
-    } catch (err: any) {
-      alert('Failed to leave session');
+    } catch (err: unknown) {
+      alert("Failed to leave session");
       console.error(err);
     }
   };
 
-  const handleDelete = async (): Promise<any> => {
-    if (!window.confirm('Are you sure you want to delete this session?')) {
+  const handleDelete = async (): Promise<void> => {
+    if (!window.confirm("Are you sure you want to delete this session?")) {
       return;
     }
 
@@ -77,9 +82,9 @@ function SessionDetail() {
           Authorization: `Bearer ${token}`,
         },
       });
-      navigate('/sessions');
-    } catch (err: any) {
-      alert('Failed to delete session');
+      navigate("/sessions");
+    } catch (err: unknown) {
+      alert("Failed to delete session");
       console.error(err);
     }
   };
@@ -95,38 +100,33 @@ function SessionDetail() {
   if (error || !session) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error || 'Session not found'}
-        </div>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error || "Session not found"}</div>
       </div>
     );
   }
 
-  const isParticipating = session.users.includes(user.id);
+  const isParticipating = user ? session.users.includes(user.id) : false;
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            {session.name}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">{session.name}</h1>
 
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-700 mb-2">Details</h2>
             <div className="space-y-2 text-gray-600">
               <p>
-                <strong>Date:</strong>{' '}
-                {new Date(session.date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+                <strong>Date:</strong>{" "}
+                {new Date(session.date).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </p>
               <p>
-                <strong>Teacher:</strong> {session.teacher.firstName}{' '}
-                {session.teacher.lastName}
+                <strong>Teacher:</strong> {session.teacher.firstName} {session.teacher.lastName}
               </p>
               <p>
                 <strong>Participants:</strong> {session.users.length}
@@ -135,54 +135,35 @@ function SessionDetail() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">
-              Description
-            </h2>
-            <p className="text-gray-600 whitespace-pre-wrap">
-              {session.description}
-            </p>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">Description</h2>
+            <p className="text-gray-600 whitespace-pre-wrap">{session.description}</p>
           </div>
 
           <div className="flex space-x-4">
-            {user.admin ? (
+            {user?.admin ? (
               <>
-                <button
-                  onClick={() => navigate(`/sessions/edit/${id}`)}
-                  className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700"
-                >
+                <button onClick={() => navigate(`/sessions/edit/${id}`)} className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">
                   Edit
                 </button>
-                <button
-                  onClick={handleDelete}
-                  className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
-                >
+                <button onClick={handleDelete} className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
                   Delete
                 </button>
               </>
             ) : (
               <>
                 {isParticipating ? (
-                  <button
-                    onClick={handleUnparticipate}
-                    className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
-                  >
+                  <button onClick={handleUnparticipate} className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
                     Leave Session
                   </button>
                 ) : (
-                  <button
-                    onClick={handleParticipate}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-                  >
+                  <button onClick={handleParticipate} className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
                     Join Session
                   </button>
                 )}
               </>
             )}
 
-            <button
-              onClick={() => navigate('/sessions')}
-              className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400"
-            >
+            <button onClick={() => navigate("/sessions")} className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400">
               Back to Sessions
             </button>
           </div>

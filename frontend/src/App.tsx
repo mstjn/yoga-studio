@@ -7,13 +7,18 @@ import SessionDetail from './pages/SessionDetail';
 import SessionForm from './pages/SessionForm';
 import Profile from './pages/Profile';
 import { authService } from './services/auth.service';
+import { JSX, ReactNode } from 'react';
 
-function PrivateRoute({ children }: any) {
-  const isAuthenticated = authService.isAuthenticated();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+interface PrivateRouteProps {
+children: ReactNode
 }
 
-function App() {
+function PrivateRoute({ children } : PrivateRouteProps) : JSX.Element {
+  const isAuthenticated = authService.isAuthenticated();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+}
+
+function App() : JSX.Element{
   return (
     <Router>
       <div className="min-h-screen bg-gray-100">
