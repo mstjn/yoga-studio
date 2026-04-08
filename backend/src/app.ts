@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import routes from './routes';
+import { errorMiddleware } from './middleware/error.middleware';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use(routes);
+app.use(errorMiddleware);
 
 // Health check
 app.get('/api/health', (req, res) => {
