@@ -45,6 +45,7 @@ function SessionForm(): JSX.Element {
       });
       setTeachers(response.data);
     } catch (err: unknown) {
+      if ((err as { name?: string }).name === "CanceledError") return;
       console.error('Failed to fetch teachers', err);
     }
   };
@@ -65,6 +66,7 @@ function SessionForm(): JSX.Element {
         teacherId: session.teacher.id,
       });
     } catch (err: unknown) {
+       if ((err as { name?: string }).name === "CanceledError") return; 
       setError('Failed to load session');
       console.error(err);
     }
