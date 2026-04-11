@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat \"C:\\\\Users\\\\Mateo\\\\OneDrive\\\\Documents\\\\Master OpenClassrooms\\\\P4 TESTS\\\\testez-app-js/frontend/src/types\"/*.ts)"
+    ]
+  }
+}
