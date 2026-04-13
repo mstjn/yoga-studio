@@ -83,6 +83,15 @@ describe("authService", () => {
 
       expect(result).toEqual(fakeUser);
     });
+
+    it("ne stocke rien dans localStorage si la réponse n'a pas de token", async () => {
+      const userWithoutToken = { ...fakeUser, token: undefined };
+      vi.mocked(api.post).mockResolvedValueOnce({ data: userWithoutToken });
+
+      await authService.login({ email: fakeUser.email, password: "password" });
+
+      expect(localStorage.getItem("token")).toBeNull();
+    });
   });
 
   describe("register", () => {
@@ -111,6 +120,20 @@ describe("authService", () => {
       });
 
       expect(result).toEqual(fakeUser);
+    });
+
+    it("ne stocke rien dans localStorage si la réponse n'a pas de token", async () => {
+      const userWithoutToken = { ...fakeUser, token: undefined };
+      vi.mocked(api.post).mockResolvedValueOnce({ data: userWithoutToken });
+
+      await authService.register({
+        email: fakeUser.email,
+        password: "password",
+        firstName: fakeUser.firstName,
+        lastName: fakeUser.lastName,
+      });
+
+      expect(localStorage.getItem("token")).toBeNull();
     });
   });
 });

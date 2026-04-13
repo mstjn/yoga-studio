@@ -123,5 +123,23 @@ describe("Login", () => {
         expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
       });
     });
+
+    it("affiche le message par défaut si l'erreur n'a pas de message serveur", async () => {
+      vi.mocked(authService.login).mockRejectedValueOnce(new Error("Network error"));
+
+      const { container } = render(
+        <MemoryRouter>
+          <Login />
+        </MemoryRouter>,
+      );
+
+      fireEvent.change(container.querySelector('input[type="email"]')!, { target: { value: "user@test.com" } });
+      fireEvent.change(container.querySelector('input[type="password"]')!, { target: { value: "wrongpassword" } });
+      fireEvent.click(screen.getByRole("button", { name: /login/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Login failed")).toBeInTheDocument();
+      });
+    });
   });
 });

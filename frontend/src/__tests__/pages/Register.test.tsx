@@ -92,5 +92,21 @@ describe('Register', () => {
         expect(screen.getByText('Email already exists')).toBeInTheDocument();
       });
     });
+
+    it("affiche le message par défaut si l'erreur n'a pas de message serveur", async () => {
+      vi.mocked(authService.register).mockRejectedValueOnce(new Error("Network error"));
+
+      const { container } = render(<MemoryRouter><Register /></MemoryRouter>);
+
+      fireEvent.change(container.querySelector('input[name="firstName"]')!, { target: { value: 'Test' } });
+      fireEvent.change(container.querySelector('input[name="lastName"]')!, { target: { value: 'User' } });
+      fireEvent.change(container.querySelector('input[name="email"]')!, { target: { value: 'user@test.com' } });
+      fireEvent.change(container.querySelector('input[name="password"]')!, { target: { value: 'password123' } });
+      fireEvent.click(screen.getByRole('button', { name: /register/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Registration failed')).toBeInTheDocument();
+      });
+    });
   });
 });

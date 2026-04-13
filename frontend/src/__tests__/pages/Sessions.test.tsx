@@ -155,5 +155,37 @@ describe('Sessions', () => {
         expect(api.delete).toHaveBeenCalledWith('/session/1', expect.any(Object));
       });
     });
+
+    it('affiche une alerte si la suppression échoue', async () => {
+      vi.mocked(authService.getCurrentUser).mockReturnValue(adminUser);
+      vi.mocked(api.get).mockResolvedValue({ data: fakeSessions });
+      vi.mocked(api.delete).mockRejectedValueOnce(new Error('Delete failed'));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(<MemoryRouter><Sessions /></MemoryRouter>);
+
+      await waitFor(() => {
+        expect(screen.getByText('Delete')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Delete'));
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith('Failed to delete session');
+      });
+    });
+
+    it('ne charge pas les sessions si l\'erreur est une CanceledError', async () => {
+      vi.mocked(authService.getCurrentUser).mockReturnValue(fakeUser);
+      const canceledError = Object.assign(new Error('canceled'), { name: 'CanceledError' });
+      vi.mocked(api.get).mockRejectedValueOnce(canceledError);
+
+      render(<MemoryRouter><Sessions /></MemoryRouter>);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Failed to load sessions')).not.toBeInTheDocument();
+      });
+    });
   });
 });
